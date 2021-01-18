@@ -1,0 +1,281 @@
+#
+# /**
+# *  $Id$
+# *       . * .
+# *     * RRRR  *    Copyright (c) 2017 EUIPO: European Union Intellectual
+# *   .   RR  R   .  Property Office (trade marks and designs)
+# *   *   RRR     *
+# *    .  RR RR  .   ALL RIGHTS RESERVED
+# *     * . _ . *
+# */
+#
+## Server
+server:
+  context-path:
+  session.timeout: 10800
+  port: 7005
+management:
+  context-path: /actuator
+## Properties for control purpose, accesible at /info
+info:
+  app:
+    version: 1.1.2-RC1.1-SNAPSHOT
+    buildTimestamp: 2018-12-14T13:16:20Z GMT
+    ohim-common-rest:
+      version: 1.3.1-RELEASE
+
+## Used by admin server, should be aligned with the value defined in logback.xml
+logging:
+  file: C:/tmp/log/microservices/ms-rgsupport/ms-rgsupport.log
+  level:
+    eu.euipo.microservice.rgsupport.external: debug
+
+## Application
+spring:
+  profiles: local
+  application:
+    name: rgsupport-backend
+
+## Consul configuration
+spring.cloud:
+  consul:
+    enabled: false
+    host: localhost
+    port: 8500
+    # Health url of the rgsupport microservice in order Consul is able to know if the service
+    # is available and therefore Zuul is able to balance the service instances properly. If the service
+    # has context path it should be indicated here.
+    discovery:
+      healthCheckPath: ${server.context-path}/health
+      healthCheckInterval: 15s
+      instanceId: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+
+## Disable JMX to avoid problems with Weblogic component
+spring.jmx.enabled: false
+
+spring.redis:
+  host: docker-redis
+  port: 6379
+
+## JSONDoc configuration
+jsondoc:
+  version: 1.0
+  basePath: ${server.context-path}
+  packages:
+    - eu.euipo.microservice.rgsupport.ws.controller
+    - eu.euipo.microservice.rgsupport.ws.domain
+  playgroundEnabled: true
+  displayMethodAs: URI
+
+
+# Mapping Files
+euipo.mapping:
+  mappingFiles: dozer/dozer-rgsupport-mappings.xml, dozer/dozer-rgsupport-security-mappings.xml, dozer/dozer-rgsupport-business-entity-mappings.xml
+
+## ADM SSO Security configuration
+adm:
+  configuration:
+    service:
+      client:
+        host: mock-server
+        port: 6001
+        protocol: http
+        baseResourcePath: api/adm-service/configuration/
+
+security:
+  oauth2:
+    client:
+      accessTokenUri: http://${adm.configuration.service.client.host}:${adm.configuration.service.client.port}/api/adm-service/administration/oauth/token
+      revokeUri: http://${adm.configuration.service.client.host}:${adm.configuration.service.client.port}/api/adm-service/administration/oauth/revoke
+      userAuthorizationUri: http://${adm.configuration.service.client.host}:${adm.configuration.service.client.port}/api/adm-service/administration/oauth/authorize
+    resource:
+      userInfoUri: http://${adm.configuration.service.client.host}:${adm.configuration.service.client.port}/api/adm-service/administration/user/me
+  # Main security file
+  esapi.path: security/rgsupport-esapi.properties
+
+
+rgsupport:
+  i18n:
+    default.basenames: classpath:i18n/messages-security-exception, classpath:i18n/dossierservice-client-errors, classpath:i18n/business-errors, classpath:i18n/controller-errors, classpath:i18n/messages-enum, classpath:i18n/drafting-editor-service-client-errors
+    literals.basenames: classpath:i18n/messages-literals
+    quickLinks.basenames: classpath:i18n/messages-quick-links
+
+  login.page: http://altia-int-ipt-iptool-lbr.dev.oami.eu/#login
+
+  # Drafting editor
+  drafting-editor:
+    url: localhost # localhost #
+    port: 7003 # 7003 #
+    open-draft:  http://localhost:8081/#/app/ # http://localhost:8081/#/app/ #
+    callback:
+      url: localhost # localhost #
+      port: 8082 # 8082 #
+    i18n:
+      literals.basenames: i18n/drafting-editor-messages-literals
+      quickLinks.basenames: classpath:i18n/drafting-editor-messages-quick-links
+      variables.basename: i18n/drafting-editor-messages-variables
+      templates.basename: i18n/drafting-editor-variables-templates
+      publisher.basename: i18n/drafting-editor-messages-publisher
+    quickLinks:
+      url:
+        similarityCompareTerms: http://euipo.europa.eu/sim/search
+        tmClass: http://euipo.europa.eu/ec2/
+        niceClassification: http://web2.wipo.int/classifications/nice/nclpub/en/fr/home.xhtml
+        tmGuidelines: https://euipo.europa.eu/ohimportal/en/trade-mark-guidelines
+        eSearchCase-law_Advanced-search: https://euipo.europa.eu/eSearchCLW/#advanced
+        gysDefinitions_unofficial_resource: http://sharedox.prod.oami.eu/share/page/document-details?nodeRef=workspace://SpacesStore/dcc86958-f48b-4ab5-8492-27724320d1ae
+        masterLists: http://sharedox.prod.oami.eu/share/page/repository#filter=path%7C%2FOffice_Docs%2FC%20CTM%2FC18%20LA%2FC1820%20LA%20Notes%2FGeneral%2FMaster%20Lists
+        dictionaries: http://insite/knowledge-corner/dictionaries
+        taxonomy:
+    mainButtons:
+      url:
+        overview: http://${rgsupport.drafting-editor.callback.url}:${rgsupport.drafting-editor.callback.port}/#/{0}/{1}
+        strategy: http://${rgsupport.drafting-editor.callback.url}:${rgsupport.drafting-editor.callback.port}/#/{0}/{1}/strategy
+        drafting:
+    editDraftingOptionsCbk: http://${rgsupport.drafting-editor.callback.url}:${rgsupport.drafting-editor.callback.port}/#/{0}/{1}/drafting
+    sharedox:
+      root-path: /User Homes/svc_svdapp152/Temporal # used for localhost and devci
+      relative-path: /{0}/{1}/{2}/{3}/{4}
+      first-path:
+        oppo: C21 OPPO Procedure
+        can: C03 Cancellation
+      second-path:
+        oppo: C2115 Decision
+        can: C0310 Decisions
+      third-path:
+        oppo: Draft Oppo Decisions
+        can: DRAFT CANC DECISIONS
+    consumer:
+      host: localhost # localhost #
+      port: 7005 # 7005 #
+      protocol: http
+      baseResourcePath: /
+
+  business:
+    # Order of precedence for proceedings (in UI) based on legal status value
+    legal.status.sorted.values: 1,21,16,3
+    annotations:
+      filterUsers: iptsys,system
+      tag: "RG"
+
+  features:
+    alcDisabled: false
+
+  security:
+    opposition:
+      accessRights: RIGHT_CTM_EXA_FILE_EDIT,RIGHT_OPPO_GSCOMP
+    cancellation:
+      accessRights: RIGHT_CAN_FILE_EDIT,RIGHT_CAN_GSCOMP
+    draftingEditor:
+      opposition:
+        accessRights: RIGHT_DRAFT_EDITOR_OPPO_EDIT
+      cancellation:
+        accessRights: RIGHT_DRAFT_EDITOR_CAN_EDIT
+    authentication.exclusion.path.list: /actuator/**
+  quickLinks:
+    url:
+      similarityCompareTerms: http://euipo.europa.eu/sim/search
+      tmClass: http://euipo.europa.eu/ec2/
+      niceClassification: http://web2.wipo.int/classifications/nice/nclpub/en/fr/home.xhtml
+      tmGuidelines: https://euipo.europa.eu/ohimportal/en/trade-mark-guidelines
+      eSearchCase-law_Advanced-search: https://euipo.europa.eu/eSearchCLW/#advanced
+      gysDefinitions_unofficial_resource: http://sharedox.prod.oami.eu/share/page/document-details?nodeRef=workspace://SpacesStore/dcc86958-f48b-4ab5-8492-27724320d1ae
+      masterLists: http://sharedox.prod.oami.eu/share/page/repository#filter=path%7C%2FOffice_Docs%2FC%20CTM%2FC18%20LA%2FC1820%20LA%20Notes%2FGeneral%2FMaster%20Lists
+      dictionaries: http://insite/knowledge-corner/dictionaries
+      taxonomy:
+      draftEditor_adminTool: http://euipo-admintool:81/#/app
+
+# drafting editor service client
+drafting.editor.service.client:
+  host: ${rgsupport.drafting-editor.url}
+  port: ${rgsupport.drafting-editor.port}
+  protocol: http
+  baseResourcePath: /
+
+# gs comparer service client
+gs_comparer.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: api/gscomparer
+
+# external service client
+external.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: api/dossier-service
+
+# trademark service client
+trademark.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: api/dossier-service
+
+# international service client
+international.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: api/dossier-service
+
+# proceeding service client
+proceeding.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: api/dossier-service
+
+# TM View
+tmview.service.client:
+  host: mock-server
+  port: 6001
+  protocol: http
+  baseResourcePath: tmview
+  details: https://www.tmdn.org/tmview/get-detail?st13={0}
+  representation:
+    image: http://mock-server:6001/tmview/trademark/image/{0}
+    sound: http://mock-server:6001/tmview/trademark/sound/{0}
+
+# phonetic check service client
+phonetic.check.service.client:
+  host: 172.30.9.68
+  port: 8090
+  protocol: http
+  comparisonOfDenoUrl: http://172.30.9.68:8090/osa2/service/comparisonOfDeno?deno1={0}&deno2={1}&format=xml
+
+# Das service client
+das.service.client:
+  url: http://haproxy-integration-cb.dev.oami.eu
+
+#fna
+fna.service:
+  host: mock-server
+  port: 6001
+  protocol: http
+  filenetImageServiceUrl: http://mock-server:6001/FileNetImageFacade/viewimage?imageId={0}&key={1}
+
+#sharedox
+sharedox.service:
+  host: sharedox.prod.oami.eu
+  protocol: http
+  documentUrl: http://sharedox.prod.oami.eu/share/page/document-details?nodeRef=workspace://SpacesStore/{0}
+
+# Links
+url:
+  iptool:
+    dossier:
+      details: http://intcorr-iptool-1-lbr.dev.oami.eu/#details/{0}/{1}?admkey={2}
+    trademark:
+      representation:
+        image: http://mock-server:6001/FileNetImageFacade/viewimage?imageId={0}&key={1}
+        sound: http://intcorr-iptool-1-lbr.dev.oami.eu:80/api/ctm/sound/{0}?extensionType={1}&admkey={2}
+        binary: http://intcorr-iptool-1-lbr.dev.oami.eu:80/api/ctm/binary/{0}?extensionType={1}&admkey={2}
+  per:
+    person:
+      details: http://devper:14004/per/action/viewOwner?id={0}&admKey={1}
+  gscomparer:
+    details: http://int-gs-comparer-lbr.dev.oami.eu/#/{DOSSIER_TYPE}/{DOSSIER_ID}/{ER_ID}?admkey={ADM_KEY}
+  alc:
+    details: http://euipo.babelscape.com/trademark?application-id={0}&denomination={1}&lang=ES&lang=DE&lang=EN&lang=FR&lang=IT&start=0&limit=5&format=JSON&excludedClasses=&access-token={2}
